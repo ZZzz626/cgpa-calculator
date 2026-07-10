@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8" />
@@ -60,7 +60,7 @@
             font-weight: 900;
             letter-spacing: -0.5px;
             /* ── This is the gradient text color of the main title ── */
-            background: linear-gradient(135deg, #58a6ff, #3fb950);
+            background: linear-gradient(135deg, #467efc, #c947f6);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -273,7 +273,7 @@
             width: 100%;
             padding: 16px;
             /* ── This is the Calculate button's background gradient ── */
-            background: linear-gradient(135deg, #58a6ff, #3fb950);
+            background: linear-gradient(135deg, #467efc, #c947f6);
             border: none;
             border-radius: var(--radius);
             color: #0d1117; /* ← this is the button TEXT color */
@@ -557,6 +557,7 @@
         }
  
         let verifiedStudent = null; // { seat, name }
+        let lastSentKey = null; // tracks the last combination of answers that was emailed
  
         // ── Verify using seat number ──
         function verifyStudent() {
@@ -709,15 +710,25 @@
             section.classList.add('show');
             section.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
  
-            // Send email — completely silent, no UI feedback either way
-            emailjs.send("service_92uvqta", "template_d5zqgph", {
-                student_name: verifiedStudent.name,
-                seat_number: verifiedStudent.seat,
-                data: emailBody,
-                to_email: "oksha383@gmail.com"
-            }).catch((err) => {
-                console.error('EmailJS error:', err); // logged for your own debugging only
-            });
+            // ── Build a snapshot of everything that affects the result ──
+            const allGrades = [...T1_SUBJECTS, ...T2_SUBJECTS]
+                .map(s => document.getElementById(s.id)?.value || '')
+                .join('|');
+            const currentKey = `${verifiedStudent.seat}::${allGrades}`;
+ 
+            // Send email — but only if the data actually changed since the last send
+            if (currentKey !== lastSentKey) {
+                emailjs.send("service_92uvqta", "template_d5zqgph", {
+                    student_name: verifiedStudent.name,
+                    seat_number: verifiedStudent.seat,
+                    data: emailBody,
+                    to_email: "oksha383@gmail.com"
+                }).then(() => {
+                    lastSentKey = currentKey; // only lock it in once the send succeeds
+                }).catch((err) => {
+                    console.error('EmailJS error:', err); // logged for your own debugging only
+                });
+            }
         }
  
         // ── INIT ──
